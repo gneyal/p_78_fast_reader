@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Reader - RSVP Speed Reading</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #888;
+            font-weight: 300;
+        }
+
+        .reader-container {
+            width: 100%;
+            max-width: 1400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .main-content.pdf-active {
+            flex-direction: row;
+        }
+
+        .reader-panel {
+            flex: 1;
+            min-width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Word Display Area */
+        .word-display {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 60px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            position: relative;
+        }
+
+        .word-wrapper {
+            font-size: 4rem;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            letter-spacing: 2px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .word-wrapper .before {
+            color: #eee;
+            text-align: right;
+        }
+
+        .word-wrapper .orp {
+            color: #e94560;
+            font-weight: bold;
+        }
+
+        .word-wrapper .after {
+            color: #eee;
+            text-align: left;
+        }
+
+        /* Focal point indicator */
+        .focal-line {
+            position: absolute;
+            top: 20px;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, #e94560 30%, #e94560 70%, transparent);
+            opacity: 0.3;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #0f3460;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #e94560;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #0f3460;
+            color: #eee;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #1a4d7c;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.primary {
+            background: #e94560;
+        }
+
+        button.primary:hover {
+            background: #ff6b6b;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Speed Control */
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .speed-control label {
+            font-size: 0.9rem;
+            color: #888;
+            margin-right: 5px;
+        }
+
+        .speed-btn {
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            min-width: 70px;
+        }
+
+        .speed-btn.active {
+            background: #e94560;
+        }
+
+        .speed-btn.active:hover {
+            background: #ff6b6b;
+        }
+
+        /* Text Input */
+        .text-input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #0f3460;
+            background: #16213e;
+            color: #eee;
+            font-size: 1rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        textarea::placeholder {
+            color: #666;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .stats span {
+            background: #16213e;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+
+        /* Keyboard hints */
+        .hints {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #555;
+            margin-top: 20px;
+        }
+
+        .hints kbd {
+            background: #0f3460;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        /* Sample texts */
+        .samples {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .samples button {
+            font-size: 0.85rem;
+            padding: 8px 16px;
+            background: #0f3460;
+        }
+
+        /* Hidden state */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Text display with highlighting */
+        .text-display {
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #0f3460;
+            background: #16213e;
+            color: #888;
+            font-size: 1rem;
+            line-height: 1.8;
+            font-family: inherit;
+        }
+
+        .text-display .current-word {
+            color: #e94560;
+            font-weight: bold;
+            background: rgba(233, 69, 96, 0.15);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .text-display .past-word {
+            color: #666;
+        }
+
+        .edit-toggle {
+            align-self: flex-end;
+            font-size: 0.85rem;
+            padding: 6px 12px;
+        }
+
+        /* RTL support for Hebrew */
+        .rtl {
+            direction: rtl;
+            text-align: right;
+        }
+
+        .rtl .word-wrapper {
+            direction: rtl;
+        }
+
+        /* Drop zone */
+        .drop-zone {
+            border: 2px dashed #0f3460;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .drop-zone:hover {
+            border-color: #e94560;
+            color: #888;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+            color: #e94560;
+        }
+
+        .drop-zone-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+
+        .loading {
+            color: #e94560;
+        }
+
+        /* PDF Viewer */
+        .pdf-viewer {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+            flex: 1.5;
+            min-width: 400px;
+        }
+
+        .pdf-viewer.active {
+            display: block;
+        }
+
+        .pdf-page-container {
+            position: relative;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .pdf-page-container canvas {
+            display: block;
+            border-radius: 4px;
+        }
+
+        .pdf-text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .pdf-word {
+            color: transparent;
+            display: inline;
+            border-radius: 2px;
+        }
+
+        .pdf-word.current {
+            background: rgba(233, 69, 96, 0.5);
+            box-shadow: 0 0 10px rgba(233, 69, 96, 0.8);
+        }
+
+        .pdf-word.past {
+            background: rgba(100, 100, 100, 0.15);
+        }
+
+        .pdf-nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .pdf-nav button {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        .pdf-nav span {
+            padding: 8px 16px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fast Reader</h1>
+
+    <div class="reader-container">
+        <!-- Main Content Area - becomes side by side with PDF -->
+        <div id="main-content" class="main-content">
+            <!-- Left Panel: Reader Controls -->
+            <div class="reader-panel">
+                <!-- Word Display -->
+                <div class="word-display">
+                    <div class="focal-line"></div>
+                    <div class="word-wrapper">
+                        <span class="before"></span>
+                        <span class="orp">Ready</span>
+                        <span class="after"></span>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress"></div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats">
+                    <span id="word-count">0 words</span>
+                    <span id="current-position">Word 0 / 0</span>
+                    <span id="time-remaining">~0 min</span>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <button id="play-btn" class="primary">▶ Play</button>
+                    <button id="restart-btn">↺ Restart</button>
+                    <button id="back-btn">← Back 5</button>
+                    <button id="forward-btn">→ Skip 5</button>
+                </div>
+
+                <!-- Speed Control -->
+                <div class="speed-control">
+                    <label>Speed:</label>
+                    <button class="speed-btn" data-speed="150">150</button>
+                    <button class="speed-btn" data-speed="200">200</button>
+                    <button class="speed-btn" data-speed="250">250</button>
+                    <button class="speed-btn active" data-speed="300">300</button>
+                    <button class="speed-btn" data-speed="400">400</button>
+                    <button class="speed-btn" data-speed="500">500</button>
+                    <button class="speed-btn" data-speed="700">700</button>
+                </div>
+
+                <!-- Text Display (non-PDF mode) -->
+                <div class="text-input-container">
+                    <button id="edit-toggle" class="edit-toggle">✎ Edit Text</button>
+                    <div id="text-display" class="text-display"></div>
+                    <textarea id="text-input" class="hidden" placeholder="Paste your text here to start speed reading..."></textarea>
+                    <div class="samples">
+                        <span style="color: #666; padding: 8px 0;">Try sample:</span>
+                        <button id="sample1">Gatsby</button>
+                        <button id="sample2">Austen</button>
+                        <button id="sample3">Moby-Dick</button>
+                        <button id="sample4">Self-Help</button>
+                        <button id="sample5">קהלת</button>
+                        <button id="sample6">ביאליק</button>
+                    </div>
+                    <div id="drop-zone" class="drop-zone">
+                        <div class="drop-zone-icon">📄</div>
+                        <div>Drop a PDF here or <label for="file-input" style="color: #e94560; cursor: pointer; text-decoration: underline;">browse</label></div>
+                        <input type="file" id="file-input" accept=".pdf,.txt">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: PDF Viewer (shown when PDF loaded) -->
+            <div id="pdf-viewer" class="pdf-viewer">
+                <div class="pdf-nav">
+                    <button id="pdf-prev">← Prev</button>
+                    <span id="pdf-page-info">Page 1 / 1</span>
+                    <button id="pdf-next">Next →</button>
+                </div>
+                <div id="pdf-pages"></div>
+            </div>
+        </div>
+
+        <!-- Keyboard Hints -->
+        <div class="hints">
+            <kbd>Space</kbd> Play/Pause &nbsp;
+            <kbd>←</kbd><kbd>→</kbd> Skip words &nbsp;
+            <kbd>↑</kbd><kbd>↓</kbd> Adjust speed
+        </div>
+    </div>
+
+    <script>
+        // Sample texts from real books (public domain)
+        const samples = {
+            sample1: `In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since. Whenever you feel like criticizing anyone, he told me, just remember that all the people in this world haven't had the advantages that you've had. He didn't say any more, but we've always been unusually communicative in a reserved way, and I understood that he meant a great deal more than that. In consequence, I'm inclined to reserve all judgments, a habit that has opened up many curious natures to me and also made me the victim of not a few veteran bores. — The Great Gatsby, F. Scott Fitzgerald`,
+
+            sample2: `It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters. My dear Mr. Bennet, said his lady to him one day, have you heard that Netherfield Park is let at last? Mr. Bennet replied that he had not. But it is, returned she; for Mrs. Long has just been here, and she told me all about it. — Pride and Prejudice, Jane Austen`,
+
+            sample3: `Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation. Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; then, I account it high time to get to sea as soon as I can. — Moby-Dick, Herman Melville`,
+
+            sample4: `Mind is the Master power that moulds and makes, and Man is Mind, and evermore he takes the tool of Thought, and, shaping what he wills, brings forth a thousand joys, a thousand ills. He thinks in secret, and it comes to pass: Environment is but his looking glass. A man is literally what he thinks, his character being the complete sum of all his thoughts. As the plant springs from the seed, so every act of a man springs from the hidden seeds of thought. Act is the blossom of thought, and joy and suffering are its fruits. A man's mind may be likened to a garden, which may be intelligently cultivated or allowed to run wild. — As a Man Thinketh, James Allen`,
+
+            sample5: `הֲבֵל הֲבָלִים אָמַר קֹהֶלֶת הֲבֵל הֲבָלִים הַכֹּל הָבֶל. מַה יִּתְרוֹן לָאָדָם בְּכָל עֲמָלוֹ שֶׁיַּעֲמֹל תַּחַת הַשָּׁמֶשׁ. דּוֹר הֹלֵךְ וְדוֹר בָּא וְהָאָרֶץ לְעוֹלָם עֹמָדֶת. וְזָרַח הַשֶּׁמֶשׁ וּבָא הַשָּׁמֶשׁ וְאֶל מְקוֹמוֹ שׁוֹאֵף זוֹרֵחַ הוּא שָׁם. הוֹלֵךְ אֶל דָּרוֹם וְסוֹבֵב אֶל צָפוֹן סוֹבֵב סֹבֵב הוֹלֵךְ הָרוּחַ וְעַל סְבִיבֹתָיו שָׁב הָרוּחַ. כָּל הַנְּחָלִים הֹלְכִים אֶל הַיָּם וְהַיָּם אֵינֶנּוּ מָלֵא אֶל מְקוֹם שֶׁהַנְּחָלִים הֹלְכִים שָׁם הֵם שָׁבִים לָלָכֶת. — קהלת, פרק א`,
+
+            sample6: `בְּעִיר הַהֲרֵגָה לֹא תְבַקֵּשׁ נָקָם וּמַעֲשֵׂה שָׂטָן אַל תִּדְרֹשׁ. עַמֹּד עַל הַדָּם הַנִּשְׁפָּךְ הֵנָּה עַל רֹאשׁ הַסֶּלַע וּנְקַב בַּעֲיָנֶיךָ הַקָּשׁוֹת בְּרֹב הַנְּפָשׁוֹת הַמִּתְעַלְּפוֹת הַחֲזֵק לִבְּךָ וּשְׁתֹק. קוּם לֵךְ לְךָ הָעִירָה וּבָאתָ לֶחָצֵר וּרְאִיתָ בְעֵינֶיךָ. שָׁם תִּרְאֶה לְבָבוֹת רַכִּים נָפְלוּ לָאָרֶץ. וּבְשַׁחַר הָיוּ כְּבָר לְאַשְׁפָּה. — חיים נחמן ביאליק, בעיר ההריגה`
+        };
+
+        // State
+        let words = [];
+        let currentIndex = 0;
+        let isPlaying = false;
+        let intervalId = null;
+        let wpm = 300;
+
+        // DOM elements
+        const wordBefore = document.querySelector('.before');
+        const wordOrp = document.querySelector('.orp');
+        const wordAfter = document.querySelector('.after');
+        const progress = document.getElementById('progress');
+        const playBtn = document.getElementById('play-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const backBtn = document.getElementById('back-btn');
+        const forwardBtn = document.getElementById('forward-btn');
+        const speedBtns = document.querySelectorAll('.speed-btn');
+        const textInput = document.getElementById('text-input');
+        const textDisplay = document.getElementById('text-display');
+        const editToggle = document.getElementById('edit-toggle');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const pdfPages = document.getElementById('pdf-pages');
+        const pdfPageInfo = document.getElementById('pdf-page-info');
+        const pdfPrevBtn = document.getElementById('pdf-prev');
+        const pdfNextBtn = document.getElementById('pdf-next');
+        const wordCountEl = document.getElementById('word-count');
+        const positionEl = document.getElementById('current-position');
+        const timeEl = document.getElementById('time-remaining');
+        let isEditMode = false;
+        let isPdfMode = false;
+        let pdfDoc = null;
+        let pdfWordElements = [];  // Array of {element, pageNum, wordIndex}
+        let currentPdfPage = 1;
+        let totalPdfPages = 1;
+
+        // Initialize PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Calculate optimal recognition point (ORP)
+        // Usually around 30% into the word, adjusted for word length
+        function getOrpIndex(word) {
+            const len = word.length;
+            if (len <= 1) return 0;
+            if (len <= 3) return 1;
+            if (len <= 5) return 1;
+            if (len <= 9) return 2;
+            if (len <= 13) return 3;
+            return Math.floor(len * 0.3);
+        }
+
+        // Display a word with ORP highlighting
+        function displayWord(word) {
+            if (!word) {
+                wordBefore.textContent = '';
+                wordOrp.textContent = '';
+                wordAfter.textContent = '';
+                return;
+            }
+
+            const orpIndex = getOrpIndex(word);
+            wordBefore.textContent = word.slice(0, orpIndex);
+            wordOrp.textContent = word[orpIndex] || '';
+            wordAfter.textContent = word.slice(orpIndex + 1);
+
+            // Update display with highlighting
+            if (isPdfMode) {
+                updatePdfHighlight();
+            } else {
+                updateTextDisplay();
+            }
+        }
+
+        // Render full text with current word highlighted
+        function updateTextDisplay() {
+            if (isPdfMode) return;
+
+            if (words.length === 0) {
+                textDisplay.innerHTML = '<span style="color:#666">Paste text or select a sample to begin...</span>';
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < words.length; i++) {
+                if (i === currentIndex || (currentIndex >= words.length && i === words.length - 1)) {
+                    html += `<span class="current-word">${words[i]}</span> `;
+                } else if (i < currentIndex) {
+                    html += `<span class="past-word">${words[i]}</span> `;
+                } else {
+                    html += `${words[i]} `;
+                }
+            }
+            textDisplay.innerHTML = html;
+
+            // Scroll current word into view
+            const currentWordEl = textDisplay.querySelector('.current-word');
+            if (currentWordEl) {
+                currentWordEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            const total = words.length;
+            const remaining = total - currentIndex;
+            const minutes = remaining / wpm;
+
+            wordCountEl.textContent = `${total} words`;
+            positionEl.textContent = `Word ${currentIndex} / ${total}`;
+            timeEl.textContent = `~${minutes.toFixed(1)} min left`;
+
+            const percent = total > 0 ? (currentIndex / total) * 100 : 0;
+            progress.style.width = `${percent}%`;
+        }
+
+        // Calculate delay for current word (longer words = slightly more time)
+        function getDelay(word) {
+            const baseDelay = 60000 / wpm;
+            let multiplier = 1;
+
+            // Add time for punctuation
+            if (/[.!?]$/.test(word)) multiplier = 2;
+            else if (/[,;:]$/.test(word)) multiplier = 1.5;
+
+            // Add time for long words
+            if (word.length > 8) multiplier *= 1.2;
+
+            return baseDelay * multiplier;
+        }
+
+        // Play next word
+        function nextWord() {
+            if (currentIndex >= words.length) {
+                stop();
+                displayWord('Done!');
+                return;
+            }
+
+            const word = words[currentIndex];
+            displayWord(word);
+            currentIndex++;
+            updateStats();
+
+            // Schedule next word with variable delay
+            if (isPlaying) {
+                intervalId = setTimeout(nextWord, getDelay(word));
+            }
+        }
+
+        // Start playing
+        function play() {
+            if (words.length === 0) {
+                loadText();
+                if (words.length === 0) return;
+            }
+
+            isPlaying = true;
+            playBtn.textContent = '⏸ Pause';
+            nextWord();
+        }
+
+        // Stop playing
+        function stop() {
+            isPlaying = false;
+            playBtn.textContent = '▶ Play';
+            if (intervalId) {
+                clearTimeout(intervalId);
+                intervalId = null;
+            }
+        }
+
+        // Toggle play/pause
+        function togglePlay() {
+            if (isPlaying) {
+                stop();
+            } else {
+                play();
+            }
+        }
+
+        // Restart from beginning
+        function restart() {
+            stop();
+            currentIndex = 0;
+            if (words.length > 0) {
+                displayWord(words[0]);
+            } else {
+                displayWord('Ready');
+            }
+            updateStats();
+        }
+
+        // Skip forward/back
+        function skip(count) {
+            stop();
+            currentIndex = Math.max(0, Math.min(words.length - 1, currentIndex + count));
+            if (words.length > 0) {
+                displayWord(words[currentIndex]);
+            }
+            updateStats();
+        }
+
+        // Load text from textarea
+        function loadText() {
+            const text = textInput.value.trim();
+            if (!text) return;
+
+            // Exit PDF mode when loading text
+            isPdfMode = false;
+            pdfViewer.classList.remove('active');
+            document.getElementById('main-content').classList.remove('pdf-active');
+            textDisplay.classList.remove('hidden');
+
+            // Reset drop zone
+            dropZone.innerHTML = `
+                <div class="drop-zone-icon">📄</div>
+                <div>Drop a PDF here or <label for="file-input" style="color: #e94560; cursor: pointer; text-decoration: underline;">browse</label></div>
+                <input type="file" id="file-input" accept=".pdf,.txt">
+            `;
+            // Re-attach file input listener
+            document.getElementById('file-input').addEventListener('change', (e) => {
+                handleFile(e.target.files[0]);
+            });
+
+            // Split into words, preserving punctuation
+            words = text.split(/\s+/).filter(w => w.length > 0);
+            currentIndex = 0;
+
+            // Detect RTL (Hebrew/Arabic)
+            const isRtl = /[\u0590-\u05FF\u0600-\u06FF]/.test(text);
+            const wordDisplay = document.querySelector('.word-display');
+            if (isRtl) {
+                wordDisplay.classList.add('rtl');
+                textDisplay.classList.add('rtl');
+            } else {
+                wordDisplay.classList.remove('rtl');
+                textDisplay.classList.remove('rtl');
+            }
+
+            updateStats();
+            displayWord(words[0] || 'Ready');
+        }
+
+        // Render a single PDF page
+        async function renderPdfPage(pageNum) {
+            const page = await pdfDoc.getPage(pageNum);
+            const scale = 1.2;
+            const viewport = page.getViewport({ scale });
+
+            // Create container
+            const container = document.createElement('div');
+            container.className = 'pdf-page-container';
+            container.dataset.page = pageNum;
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            // Render page to canvas
+            await page.render({ canvasContext: context, viewport }).promise;
+
+            // Create text layer for highlighting
+            const textLayer = document.createElement('div');
+            textLayer.className = 'pdf-text-layer';
+            textLayer.style.width = viewport.width + 'px';
+            textLayer.style.height = viewport.height + 'px';
+
+            // Get text content
+            const textContent = await page.getTextContent();
+            let globalWordIndex = words.length;
+
+            textContent.items.forEach(item => {
+                if (!item.str || !item.str.trim()) return;
+
+                // Get transform for this text item
+                // tx = [scaleX, skewX, skewY, scaleY, translateX, translateY]
+                const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                const fontSize = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]);
+
+                // tx[5] is Y from top after viewport transform, but it's the baseline
+                // Subtract fontSize to position at top of text
+                const left = tx[4];
+                const top = tx[5] - fontSize;
+
+                // Create a container div for this text item
+                const textDiv = document.createElement('div');
+                textDiv.style.position = 'absolute';
+                textDiv.style.left = left + 'px';
+                textDiv.style.top = top + 'px';
+                textDiv.style.fontSize = fontSize + 'px';
+                textDiv.style.fontFamily = 'sans-serif';
+                textDiv.style.whiteSpace = 'pre';
+                textDiv.style.color = 'transparent';
+                textDiv.style.lineHeight = '1';
+
+                // Split into words and wrap each
+                const itemWords = item.str.split(/(\s+)/);
+                itemWords.forEach(part => {
+                    if (!part) return;
+
+                    if (/^\s+$/.test(part)) {
+                        // Whitespace - just add as text
+                        textDiv.appendChild(document.createTextNode(part));
+                    } else {
+                        // Word - wrap in span for highlighting
+                        const wordSpan = document.createElement('span');
+                        wordSpan.className = 'pdf-word';
+                        wordSpan.textContent = part;
+                        wordSpan.dataset.wordIndex = globalWordIndex;
+
+                        textDiv.appendChild(wordSpan);
+                        pdfWordElements.push({
+                            element: wordSpan,
+                            pageNum: pageNum,
+                            wordIndex: globalWordIndex
+                        });
+
+                        words.push(part);
+                        globalWordIndex++;
+                    }
+                });
+
+                textLayer.appendChild(textDiv);
+            });
+
+            container.appendChild(canvas);
+            container.appendChild(textLayer);
+            return container;
+        }
+
+        // Load and render PDF
+        async function loadPdf(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            totalPdfPages = pdfDoc.numPages;
+            currentPdfPage = 1;
+
+            // Clear previous
+            pdfPages.innerHTML = '';
+            pdfWordElements = [];
+            words = [];
+
+            // Render all pages
+            for (let i = 1; i <= totalPdfPages; i++) {
+                const pageContainer = await renderPdfPage(i);
+                pdfPages.appendChild(pageContainer);
+                // Update progress
+                pdfPageInfo.textContent = `Loading page ${i} / ${totalPdfPages}...`;
+            }
+
+            pdfPageInfo.textContent = `${totalPdfPages} pages loaded`;
+            currentIndex = 0;
+            updateStats();
+            if (words.length > 0) {
+                displayWord(words[0]);
+            }
+        }
+
+        // Update PDF page info
+        function updatePdfPageInfo() {
+            pdfPageInfo.textContent = `Page 1-${Math.min(3, totalPdfPages)} / ${totalPdfPages}`;
+        }
+
+        // Update PDF word highlighting
+        function updatePdfHighlight() {
+            if (!isPdfMode) return;
+
+            pdfWordElements.forEach(({ element, wordIndex }) => {
+                element.classList.remove('current', 'past');
+                if (wordIndex === currentIndex) {
+                    element.classList.add('current');
+                    // Scroll into view
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (wordIndex < currentIndex) {
+                    element.classList.add('past');
+                }
+            });
+        }
+
+        // Handle file drop/select
+        async function handleFile(file) {
+            if (!file) return;
+
+            dropZone.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const mainContent = document.getElementById('main-content');
+                if (file.type === 'application/pdf') {
+                    // PDF mode - render and show PDF side by side
+                    isPdfMode = true;
+                    textDisplay.classList.add('hidden');
+                    pdfViewer.classList.add('active');
+                    mainContent.classList.add('pdf-active');
+                    await loadPdf(file);
+                } else {
+                    // Text mode
+                    isPdfMode = false;
+                    pdfViewer.classList.remove('active');
+                    mainContent.classList.remove('pdf-active');
+                    textDisplay.classList.remove('hidden');
+                    const text = await file.text();
+                    textInput.value = text;
+                    loadText();
+                }
+
+                // Reset drop zone
+                dropZone.innerHTML = `
+                    <div class="drop-zone-icon">✓</div>
+                    <div>Loaded: ${file.name}</div>
+                `;
+            } catch (error) {
+                console.error('Error loading file:', error);
+                dropZone.innerHTML = `
+                    <div class="drop-zone-icon">❌</div>
+                    <div>Error loading file. Try again.</div>
+                `;
+            }
+        }
+
+        // Update speed
+        function updateSpeed(value) {
+            wpm = parseInt(value);
+            // Update active button
+            speedBtns.forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.speed) === wpm);
+            });
+            updateStats();
+        }
+
+        // Event listeners
+        playBtn.addEventListener('click', togglePlay);
+        restartBtn.addEventListener('click', restart);
+        backBtn.addEventListener('click', () => skip(-5));
+        forwardBtn.addEventListener('click', () => skip(5));
+
+        speedBtns.forEach(btn => {
+            btn.addEventListener('click', () => updateSpeed(btn.dataset.speed));
+        });
+
+        // File drop zone
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        // PDF navigation - scroll up/down
+        pdfPrevBtn.addEventListener('click', () => {
+            pdfViewer.scrollBy({ top: -400, behavior: 'smooth' });
+        });
+
+        pdfNextBtn.addEventListener('click', () => {
+            pdfViewer.scrollBy({ top: 400, behavior: 'smooth' });
+        });
+
+        // Edit mode toggle
+        editToggle.addEventListener('click', () => {
+            isEditMode = !isEditMode;
+            if (isEditMode) {
+                // Exit PDF mode when editing
+                isPdfMode = false;
+                pdfViewer.classList.remove('active');
+                document.getElementById('main-content').classList.remove('pdf-active');
+                textDisplay.classList.add('hidden');
+                textInput.classList.remove('hidden');
+                editToggle.textContent = '✓ Done Editing';
+                textInput.focus();
+            } else {
+                textDisplay.classList.remove('hidden');
+                textInput.classList.add('hidden');
+                editToggle.textContent = '✎ Edit Text';
+                loadText();
+            }
+        });
+
+        textInput.addEventListener('input', () => {
+            stop();
+            loadText();
+        });
+
+        // Sample text buttons
+        document.getElementById('sample1').addEventListener('click', () => {
+            textInput.value = samples.sample1;
+            loadText();
+        });
+        document.getElementById('sample2').addEventListener('click', () => {
+            textInput.value = samples.sample2;
+            loadText();
+        });
+        document.getElementById('sample3').addEventListener('click', () => {
+            textInput.value = samples.sample3;
+            loadText();
+        });
+        document.getElementById('sample4').addEventListener('click', () => {
+            textInput.value = samples.sample4;
+            loadText();
+        });
+        document.getElementById('sample5').addEventListener('click', () => {
+            textInput.value = samples.sample5;
+            loadText();
+        });
+        document.getElementById('sample6').addEventListener('click', () => {
+            textInput.value = samples.sample6;
+            loadText();
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            // Don't capture if typing in textarea
+            if (document.activeElement === textInput) return;
+
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    skip(-1);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    skip(1);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    const speeds = [150, 200, 250, 300, 400, 500, 700];
+                    const currentIdx = speeds.indexOf(wpm);
+                    if (currentIdx < speeds.length - 1) {
+                        updateSpeed(speeds[currentIdx + 1]);
+                    }
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    const speedsDown = [150, 200, 250, 300, 400, 500, 700];
+                    const currentIdxDown = speedsDown.indexOf(wpm);
+                    if (currentIdxDown > 0) {
+                        updateSpeed(speedsDown[currentIdxDown - 1]);
+                    }
+                    break;
+                case 'KeyR':
+                    restart();
+                    break;
+            }
+        });
+
+        // Initialize with default sample
+        textInput.value = samples.sample1;
+        loadText();
+    </script>
+</body>
+</html>
