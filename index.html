@@ -582,17 +582,147 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #999;
-            gap: 16px;
+            color: #666;
+            gap: 32px;
+            padding: 40px 20px;
+        }
+
+        .welcome-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
         }
 
         .welcome-icon {
-            font-size: 48px;
-            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
         }
 
-        .welcome p {
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 300;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+        }
+
+        .welcome-subtitle {
             font-size: 14px;
+            color: #999;
+        }
+
+        .welcome-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .welcome-cta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 28px;
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .welcome-cta:hover {
+            background: #333;
+            transform: translateY(-2px);
+        }
+
+        .welcome-or {
+            font-size: 12px;
+            color: #bbb;
+        }
+
+        .welcome-hint {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .welcome-hint kbd {
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        .welcome-samples {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            max-width: 500px;
+        }
+
+        .welcome-sample-btn {
+            padding: 8px 16px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .welcome-sample-btn:hover {
+            border-color: #ff5a00;
+            color: #ff5a00;
+        }
+
+        .welcome-last-session {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .welcome-last-session-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .welcome-last-session-title {
+            font-size: 13px;
+            color: #1a1a1a;
+        }
+
+        .welcome-last-session-progress {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .welcome-last-session-btn {
+            padding: 6px 12px;
+            background: #ff5a00;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .welcome-last-session-btn:hover {
+            background: #e55000;
         }
 
         /* Hidden */
@@ -777,6 +907,30 @@
                 display: none;
             }
 
+            .welcome {
+                gap: 24px;
+                padding: 30px 16px;
+            }
+
+            .welcome-title {
+                font-size: 26px;
+            }
+
+            .welcome-samples {
+                max-width: 100%;
+            }
+
+            .welcome-sample-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+
+            .welcome-last-session {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+
             .pdf-nav {
                 top: 65px;
                 right: 4px;
@@ -880,8 +1034,41 @@
         <!-- Word Display -->
         <div class="word-display" id="word-display">
             <div class="welcome" id="welcome">
-                <div class="welcome-icon"><i data-lucide="book-open" style="width: 48px; height: 48px; color: #ddd;"></i></div>
-                <p>Upload a PDF or press <kbd>Space</kbd> to start with samples</p>
+                <div class="welcome-brand">
+                    <div class="welcome-icon">
+                        <i data-lucide="book-open" style="width: 56px; height: 56px; color: #ff5a00;"></i>
+                    </div>
+                    <div class="welcome-title">Fast Reader</div>
+                    <div class="welcome-subtitle">Speed reading made simple</div>
+                </div>
+
+                <div class="welcome-actions">
+                    <label class="welcome-cta" for="file-input">
+                        <i data-lucide="upload" style="width: 18px; height: 18px;"></i>
+                        Upload PDF
+                    </label>
+                    <div class="welcome-or">or try a sample</div>
+                    <div class="welcome-samples">
+                        <button class="welcome-sample-btn" data-sample="1">The Great Gatsby</button>
+                        <button class="welcome-sample-btn" data-sample="2">Pride & Prejudice</button>
+                        <button class="welcome-sample-btn" data-sample="3">Moby-Dick</button>
+                        <button class="welcome-sample-btn" data-sample="4">As a Man Thinketh</button>
+                        <button class="welcome-sample-btn" data-sample="5">קהלת</button>
+                    </div>
+                </div>
+
+                <div class="welcome-hint">
+                    Press <kbd>Space</kbd> to start reading
+                </div>
+
+                <div class="welcome-last-session" id="welcome-last-session" style="display: none;">
+                    <i data-lucide="clock" style="width: 20px; height: 20px; color: #999;"></i>
+                    <div class="welcome-last-session-info">
+                        <div class="welcome-last-session-title" id="last-session-title">-</div>
+                        <div class="welcome-last-session-progress" id="last-session-progress">-</div>
+                    </div>
+                    <button class="welcome-last-session-btn" id="last-session-continue">Continue</button>
+                </div>
             </div>
             <div class="word-wrapper hidden" id="word-wrapper">
                 <span class="before"></span>
@@ -2008,16 +2195,33 @@
             localStorage.removeItem('fastReaderProgress');
         }
 
-        // Check for saved sessions on load
+        // Check for saved sessions on load and show last session
         const savedSessions = getSavedSessions();
+        const welcomeLastSession = document.getElementById('welcome-last-session');
+        const lastSessionTitle = document.getElementById('last-session-title');
+        const lastSessionProgress = document.getElementById('last-session-progress');
+        const lastSessionContinue = document.getElementById('last-session-continue');
+
         if (savedSessions.length > 0) {
             const recent = savedSessions[0];
-            welcome.innerHTML = `
-                <div class="welcome-icon"><i data-lucide="book-open" style="width: 48px; height: 48px; color: #ddd;"></i></div>
-                <p>Upload a PDF or press <kbd>Space</kbd> to start</p>
-                <p style="font-size: 12px; margin-top: 8px;">Last session: ${recent.percent}% of ${recent.fileName}</p>
-            `;
+            welcomeLastSession.style.display = 'flex';
+            lastSessionTitle.textContent = recent.fileName.length > 30
+                ? recent.fileName.substring(0, 30) + '...'
+                : recent.fileName;
+            lastSessionProgress.textContent = `${recent.percent}% completed`;
+
+            lastSessionContinue.addEventListener('click', () => {
+                // User needs to load the file first
+                alert(`Please upload "${recent.fileName}" to continue from where you left off.`);
+            });
         }
+
+        // Welcome sample buttons
+        document.querySelectorAll('.welcome-sample-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                loadSample(btn.dataset.sample);
+            });
+        });
 
         // Initialize saved sessions list
         updateSavedSessionsList();
