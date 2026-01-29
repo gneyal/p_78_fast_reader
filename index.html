@@ -619,6 +619,66 @@
             color: #999;
         }
 
+        .welcome-library {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .library-title {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .library-books {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            max-width: 500px;
+        }
+
+        .library-book {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 12px 16px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            min-width: 140px;
+        }
+
+        .library-book:hover {
+            border-color: #ff5a00;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .book-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+
+        .book-author {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .library-note {
+            font-size: 11px;
+            color: #bbb;
+        }
+
         /* Hidden */
         .hidden {
             display: none !important;
@@ -920,11 +980,44 @@
 
                 <button class="welcome-cta" id="start-tutorial-btn">
                     <i data-lucide="play" style="width: 18px; height: 18px;"></i>
-                    Start
+                    Start Demo
                 </button>
 
                 <div class="welcome-hint">
-                    or <label for="file-input" style="color: #ff5a00; cursor: pointer;">upload a PDF</label>
+                    <label for="file-input" style="color: #ff5a00; cursor: pointer;">Upload your PDF</label>
+                    <span style="margin: 0 8px; color: #ccc;">or</span>
+                    <button id="show-library-btn" style="color: #ff5a00; cursor: pointer; background: none; border: none; font-size: 13px;">browse library</button>
+                </div>
+
+                <div class="welcome-library" id="welcome-library" style="display: none;">
+                    <div class="library-title">Public Domain Classics</div>
+                    <div class="library-books">
+                        <button class="library-book" data-url="https://www.gutenberg.org/cache/epub/11/pg11-images.pdf">
+                            <span class="book-title">Alice in Wonderland</span>
+                            <span class="book-author">Lewis Carroll</span>
+                        </button>
+                        <button class="library-book" data-url="https://www.gutenberg.org/cache/epub/1342/pg1342-images.pdf">
+                            <span class="book-title">Pride and Prejudice</span>
+                            <span class="book-author">Jane Austen</span>
+                        </button>
+                        <button class="library-book" data-url="https://www.gutenberg.org/cache/epub/84/pg84-images.pdf">
+                            <span class="book-title">Frankenstein</span>
+                            <span class="book-author">Mary Shelley</span>
+                        </button>
+                        <button class="library-book" data-url="https://www.gutenberg.org/cache/epub/1661/pg1661-images.pdf">
+                            <span class="book-title">Sherlock Holmes</span>
+                            <span class="book-author">Arthur Conan Doyle</span>
+                        </button>
+                        <button class="library-book" data-url="https://www.gutenberg.org/cache/epub/2701/pg2701-images.pdf">
+                            <span class="book-title">Moby Dick</span>
+                            <span class="book-author">Herman Melville</span>
+                        </button>
+                        <button class="library-book" data-url="https://www.gutenberg.org/cache/epub/1232/pg1232-images.pdf">
+                            <span class="book-title">The Prince</span>
+                            <span class="book-author">Machiavelli</span>
+                        </button>
+                    </div>
+                    <div class="library-note">Free books from Project Gutenberg</div>
                 </div>
             </div>
             <div class="word-wrapper hidden" id="word-wrapper">
@@ -2057,11 +2150,57 @@
         // Check for saved sessions on load
         const savedSessions = getSavedSessions();
 
-        // Start tutorial button
+        // Start tutorial button - load the tutorial PDF
         const startTutorialBtn = document.getElementById('start-tutorial-btn');
-        startTutorialBtn.addEventListener('click', () => {
-            loadSample(0);
-            setTimeout(() => play(), 300);
+        startTutorialBtn.addEventListener('click', async () => {
+            loading.classList.add('active');
+            loading.textContent = 'Loading tutorial...';
+            try {
+                const response = await fetch('tutorial.pdf');
+                const blob = await response.blob();
+                const file = new File([blob], 'tutorial.pdf', { type: 'application/pdf' });
+                await handleFile(file);
+                setTimeout(() => play(), 500);
+            } catch (e) {
+                // Fallback to text tutorial
+                loadSample(0);
+                setTimeout(() => play(), 300);
+            }
+            loading.classList.remove('active');
+        });
+
+        // Library toggle
+        const showLibraryBtn = document.getElementById('show-library-btn');
+        const welcomeLibrary = document.getElementById('welcome-library');
+        showLibraryBtn.addEventListener('click', () => {
+            welcomeLibrary.style.display = welcomeLibrary.style.display === 'none' ? 'flex' : 'none';
+            showLibraryBtn.textContent = welcomeLibrary.style.display === 'none' ? 'browse library' : 'hide library';
+        });
+
+        // Library book loading
+        document.querySelectorAll('.library-book').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const url = btn.dataset.url;
+                const title = btn.querySelector('.book-title').textContent;
+                loading.classList.add('active');
+                loading.textContent = `Loading ${title}...`;
+
+                try {
+                    // Try direct fetch (may fail due to CORS)
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('CORS blocked');
+                    const blob = await response.blob();
+                    const file = new File([blob], `${title}.pdf`, { type: 'application/pdf' });
+                    await handleFile(file);
+                } catch (e) {
+                    // If CORS fails, open in new tab for manual download
+                    loading.classList.remove('active');
+                    showToast('Opening download page...');
+                    window.open(url, '_blank');
+                    return;
+                }
+                loading.classList.remove('active');
+            });
         });
 
         // Initialize saved sessions list
