@@ -992,32 +992,28 @@
                 <div class="welcome-library" id="welcome-library" style="display: none;">
                     <div class="library-title">Public Domain Classics</div>
                     <div class="library-books">
-                        <button class="library-book" data-url="https://archive.org/download/AlicesAdventuresInWonderland/alice-in-wonderland.pdf">
+                        <button class="library-book" data-url="books/alice.pdf">
                             <span class="book-title">Alice in Wonderland</span>
                             <span class="book-author">Lewis Carroll</span>
                         </button>
-                        <button class="library-book" data-url="https://archive.org/download/prideprejudice00aust/prideprejudice00aust.pdf">
-                            <span class="book-title">Pride and Prejudice</span>
-                            <span class="book-author">Jane Austen</span>
+                        <button class="library-book" data-url="books/art-of-war.pdf">
+                            <span class="book-title">The Art of War</span>
+                            <span class="book-author">Sun Tzu</span>
                         </button>
-                        <button class="library-book" data-url="https://archive.org/download/frankenstein_librivox/frankenstein_librivox.pdf" data-alt="https://archive.org/details/frankenstein00shel">
-                            <span class="book-title">Frankenstein</span>
-                            <span class="book-author">Mary Shelley</span>
+                        <button class="library-book" data-url="books/meditations.pdf">
+                            <span class="book-title">Meditations</span>
+                            <span class="book-author">Marcus Aurelius</span>
                         </button>
-                        <button class="library-book" data-url="https://archive.org/download/adventuresofsher00doyluoft/adventuresofsher00doyluoft.pdf">
-                            <span class="book-title">Sherlock Holmes</span>
-                            <span class="book-author">Arthur Conan Doyle</span>
-                        </button>
-                        <button class="library-book" data-url="https://archive.org/download/mobydick00melv/mobydick00melv.pdf">
-                            <span class="book-title">Moby Dick</span>
-                            <span class="book-author">Herman Melville</span>
-                        </button>
-                        <button class="library-book" data-url="https://archive.org/download/princemac00machuoft/princemac00machuoft.pdf">
+                        <button class="library-book" data-url="books/prince.pdf">
                             <span class="book-title">The Prince</span>
                             <span class="book-author">Machiavelli</span>
                         </button>
+                        <button class="library-book" data-url="books/common-sense.pdf">
+                            <span class="book-title">Common Sense</span>
+                            <span class="book-author">Thomas Paine</span>
+                        </button>
                     </div>
-                    <div class="library-note">Free books from Internet Archive</div>
+                    <div class="library-note">Public domain books included</div>
                 </div>
             </div>
             <div class="word-wrapper hidden" id="word-wrapper">
@@ -2177,7 +2173,7 @@
             showLibraryBtn.textContent = welcomeLibrary.style.display === 'none' ? 'browse library' : 'hide library';
         });
 
-        // Library book loading (via proxy to avoid CORS)
+        // Library book loading (local files)
         document.querySelectorAll('.library-book').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const url = btn.dataset.url;
@@ -2186,18 +2182,14 @@
                 loading.textContent = `Loading ${title}...`;
 
                 try {
-                    // Use proxy to fetch PDF (avoids CORS)
-                    const proxyUrl = `/proxy?url=${encodeURIComponent(url)}`;
-                    const response = await fetch(proxyUrl);
+                    const response = await fetch(url);
                     if (!response.ok) throw new Error('Failed to load');
                     const blob = await response.blob();
                     const file = new File([blob], `${title}.pdf`, { type: 'application/pdf' });
                     await handleFile(file);
                 } catch (e) {
-                    // Fallback: open in new tab
                     loading.classList.remove('active');
-                    showToast('Opening download page...');
-                    window.open(url, '_blank');
+                    showToast('Failed to load book');
                     return;
                 }
                 loading.classList.remove('active');
