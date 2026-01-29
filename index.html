@@ -725,6 +725,39 @@
             background: #e55000;
         }
 
+        .welcome-divider {
+            width: 60px;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .welcome-secondary {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            opacity: 0.8;
+        }
+
+        .welcome-upload-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .welcome-upload-btn:hover {
+            border-color: #ff5a00;
+            color: #ff5a00;
+        }
+
         /* Hidden */
         .hidden {
             display: none !important;
@@ -931,6 +964,20 @@
                 gap: 8px;
             }
 
+            .welcome-cta {
+                padding: 12px 24px;
+                font-size: 13px;
+            }
+
+            .welcome-secondary {
+                gap: 10px;
+            }
+
+            .welcome-upload-btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+
             .pdf-nav {
                 top: 65px;
                 right: 4px;
@@ -1043,11 +1090,21 @@
                 </div>
 
                 <div class="welcome-actions">
-                    <label class="welcome-cta" for="file-input">
-                        <i data-lucide="upload" style="width: 18px; height: 18px;"></i>
+                    <button class="welcome-cta" id="start-tutorial-btn">
+                        <i data-lucide="play" style="width: 18px; height: 18px;"></i>
+                        Start Tutorial
+                    </button>
+                    <div class="welcome-or">You'll be reading faster in 60 seconds</div>
+                </div>
+
+                <div class="welcome-divider"></div>
+
+                <div class="welcome-secondary">
+                    <label class="welcome-upload-btn" for="file-input">
+                        <i data-lucide="upload" style="width: 16px; height: 16px;"></i>
                         Upload PDF
                     </label>
-                    <div class="welcome-or">or try a sample</div>
+                    <div class="welcome-or">or try a classic</div>
                     <div class="welcome-samples">
                         <button class="welcome-sample-btn" data-sample="1">The Great Gatsby</button>
                         <button class="welcome-sample-btn" data-sample="2">Pride & Prejudice</button>
@@ -1055,10 +1112,6 @@
                         <button class="welcome-sample-btn" data-sample="4">As a Man Thinketh</button>
                         <button class="welcome-sample-btn" data-sample="5">קהלת</button>
                     </div>
-                </div>
-
-                <div class="welcome-hint">
-                    Press <kbd>Space</kbd> to start reading
                 </div>
 
                 <div class="welcome-last-session" id="welcome-last-session" style="display: none;">
@@ -1147,6 +1200,7 @@
                 <div class="menu-section">Saved Sessions</div>
                 <div id="saved-sessions-list"></div>
                 <div class="menu-section">Samples</div>
+                <button data-sample="0">📖 How to Speed Read</button>
                 <button data-sample="1">The Great Gatsby</button>
                 <button data-sample="2">Pride and Prejudice</button>
                 <button data-sample="3">Moby-Dick</button>
@@ -1178,6 +1232,7 @@
 
         // Sample texts
         const samples = {
+            0: `Welcome to Fast Reader. You are about to discover something surprising about yourself. You can read much faster than you think. Most people read at about 200 to 250 words per minute. But your brain is capable of processing information much faster than that. The reason we read slowly is not because of our brain's limitations. It is because of how we were taught to read as children. We learned to read by sounding out words one at a time. This habit of subvocalization stays with us into adulthood. It creates a bottleneck that slows us down. Fast Reader removes this bottleneck by showing you one word at a time. Each word appears exactly where your eyes are already looking. You don't need to move your eyes across the page. You don't need to find the next line. The words come to you at a steady pace. This technique is called Rapid Serial Visual Presentation or RSVP. Research shows that people can comfortably read at 400 to 500 words per minute using RSVP. Some people can go even faster with practice. That means you could read a typical book in just a few hours instead of several days. Try increasing the speed using the controls below or press the up arrow key. You might be surprised how fast you can go while still understanding everything. The orange letter in each word marks the optimal recognition point. This is where your eye naturally focuses to recognize the word fastest. Start with the speed that feels comfortable. Then gradually increase it as you get used to the technique. Your brain will adapt quickly. Most people double their reading speed within the first few sessions. Welcome to faster reading. Press space to pause and explore the controls. Upload any PDF to start speed reading your own documents. Enjoy.`,
             1: `In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since. Whenever you feel like criticizing anyone, he told me, just remember that all the people in this world haven't had the advantages that you've had. He didn't say any more, but we've always been unusually communicative in a reserved way, and I understood that he meant a great deal more than that. In consequence, I'm inclined to reserve all judgments, a habit that has opened up many curious natures to me and also made me the victim of not a few veteran bores.`,
             2: `It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters. My dear Mr. Bennet, said his lady to him one day, have you heard that Netherfield Park is let at last?`,
             3: `Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation. Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; then, I account it high time to get to sea as soon as I can.`,
@@ -1331,7 +1386,7 @@
         // Play
         function play() {
             if (words.length === 0) {
-                loadSample(1);
+                loadSample(0); // Load tutorial by default
             }
             isPlaying = true;
             playBtn.innerHTML = '<i data-lucide="pause" class="icon"></i>';
@@ -2221,6 +2276,13 @@
             btn.addEventListener('click', () => {
                 loadSample(btn.dataset.sample);
             });
+        });
+
+        // Start tutorial button
+        const startTutorialBtn = document.getElementById('start-tutorial-btn');
+        startTutorialBtn.addEventListener('click', () => {
+            loadSample(0);
+            setTimeout(() => play(), 300);
         });
 
         // Initialize saved sessions list
