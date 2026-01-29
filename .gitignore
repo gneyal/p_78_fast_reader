@@ -1,3 +1,5 @@
 *.pdf
 !tutorial.pdf
 !books/alice.pdf
+
+.DS_Store
