@@ -2177,7 +2177,7 @@
             showLibraryBtn.textContent = welcomeLibrary.style.display === 'none' ? 'browse library' : 'hide library';
         });
 
-        // Library book loading
+        // Library book loading (via proxy to avoid CORS)
         document.querySelectorAll('.library-book').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const url = btn.dataset.url;
@@ -2186,14 +2186,15 @@
                 loading.textContent = `Loading ${title}...`;
 
                 try {
-                    // Try direct fetch (may fail due to CORS)
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error('CORS blocked');
+                    // Use proxy to fetch PDF (avoids CORS)
+                    const proxyUrl = `/proxy?url=${encodeURIComponent(url)}`;
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error('Failed to load');
                     const blob = await response.blob();
                     const file = new File([blob], `${title}.pdf`, { type: 'application/pdf' });
                     await handleFile(file);
                 } catch (e) {
-                    // If CORS fails, open in new tab for manual download
+                    // Fallback: open in new tab
                     loading.classList.remove('active');
                     showToast('Opening download page...');
                     window.open(url, '_blank');
