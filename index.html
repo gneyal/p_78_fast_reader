@@ -2212,6 +2212,14 @@
 
         // Initialize Lucide icons
         lucide.createIcons();
+
+        // Handle URL parameters for auto-loading books
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookParam = urlParams.get('book');
+        if (bookParam === 'alice') {
+            // Auto-load Alice in Wonderland
+            aliceBtn.click();
+        }
     </script>
 </body>
 </html>
