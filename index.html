@@ -939,6 +939,27 @@
                 min-height: 44px;
             }
         }
+
+        /* Built with Kompany badge */
+        .built-with {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 14px;
+            color: #999;
+            text-decoration: none;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .built-with:hover {
+            color: #1a1a1a;
+            border-color: #ccc;
+        }
     </style>
 </head>
 <body>
@@ -2221,5 +2242,6 @@
             aliceBtn.click();
         }
     </script>
+    <a href="https://kompany.dev" target="_blank" rel="noopener" class="built-with">Built with Kompany</a>
 </body>
 </html>
