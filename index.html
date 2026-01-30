@@ -207,29 +207,24 @@
             font-family: 'Helvetica Neue', sans-serif;
             font-weight: 300;
             letter-spacing: -1px;
-            display: flex;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: baseline;
+            min-width: 300px;
         }
 
         .word-wrapper .before {
             color: #1a1a1a;
             text-align: right;
-            min-width: 3ch;
-            width: 6ch;
         }
 
         .word-wrapper .after {
             color: #1a1a1a;
             text-align: left;
-            min-width: 3ch;
-            width: 6ch;
         }
 
         .word-wrapper .orp {
             color: #ff5a00;
-            width: 1ch;
-            text-align: center;
         }
 
         /* RTL */
