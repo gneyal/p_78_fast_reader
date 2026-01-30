@@ -185,8 +185,6 @@
         .word-display.compact .word-wrapper {
             font-size: 4rem;
             min-width: 400px;
-            text-align: center;
-            justify-content: center;
         }
 
         .word-display.compact .welcome {
@@ -211,16 +209,28 @@
             letter-spacing: -1px;
             display: flex;
             justify-content: center;
+            align-items: baseline;
         }
 
-        .word-wrapper .before,
+        .word-wrapper .before {
+            color: #1a1a1a;
+            text-align: right;
+            min-width: 3ch;
+            width: 6ch;
+        }
+
         .word-wrapper .after {
             color: #1a1a1a;
+            text-align: left;
+            min-width: 3ch;
+            width: 6ch;
         }
 
         .word-wrapper .orp {
             color: #ff5a00;
             font-weight: 500;
+            width: 1ch;
+            text-align: center;
         }
 
         /* RTL */
