@@ -172,6 +172,8 @@
             z-index: 90;
             min-height: auto;
             width: 500px;
+            min-width: 300px;
+            max-width: 90vw;
             padding: 32px 40px;
             background: #fff;
             border-radius: 16px;
@@ -180,6 +182,20 @@
             user-select: none;
             flex-direction: column;
             gap: 8px;
+            resize: horizontal;
+            overflow: hidden;
+        }
+
+        .word-display.compact::after {
+            content: '';
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 12px;
+            height: 12px;
+            cursor: se-resize;
+            background: linear-gradient(135deg, transparent 50%, #ccc 50%);
+            border-radius: 0 0 4px 0;
         }
 
         .word-display.compact .word-wrapper {
@@ -225,6 +241,7 @@
 
         .word-wrapper .orp {
             color: #ff5a00;
+            text-shadow: 0.5px 0 0 currentColor, -0.5px 0 0 currentColor;
         }
 
         /* RTL */
@@ -1096,6 +1113,13 @@
         <div class="menu-container">
             <button class="menu-btn" id="menu-btn"><i data-lucide="more-horizontal" class="icon"></i></button>
             <div class="menu-dropdown" id="menu-dropdown">
+                <div class="menu-section">Reader Size</div>
+                <div style="padding: 8px 16px;">
+                    <div class="line-control" id="size-control" style="width: 100%;">
+                        <div class="line-control-lines" id="size-lines" style="flex: 1;"></div>
+                        <span class="line-control-value" id="size-value">100%</span>
+                    </div>
+                </div>
                 <div class="menu-section" id="jump-section" style="display:none;">Jump to Page</div>
                 <div id="jump-to-page-container" style="display:none;">
                     <div style="padding: 8px 16px; display: flex; gap: 8px; align-items: center;">
@@ -1263,6 +1287,8 @@
         const opacityValue = document.getElementById('opacity-value');
         const opacityWrap = document.getElementById('opacity-wrap');
         const opacityDivider = document.getElementById('opacity-divider');
+        const sizeLines = document.getElementById('size-lines');
+        const sizeValue = document.getElementById('size-value');
         const saveBtn = document.getElementById('save-btn');
         const resumeBtn = document.getElementById('resume-btn');
         const resumeWrap = document.getElementById('resume-wrap');
@@ -1975,6 +2001,18 @@
                         showToast('Resumed from saved');
                     }
                     break;
+                case 'Equal':
+                case 'NumpadAdd':
+                    e.preventDefault();
+                    cycleSize(1);
+                    showToast(`Size: ${currentSize}%`);
+                    break;
+                case 'Minus':
+                case 'NumpadSubtract':
+                    e.preventDefault();
+                    cycleSize(-1);
+                    showToast(`Size: ${currentSize}%`);
+                    break;
                 case 'Digit1':
                 case 'Digit2':
                 case 'Digit3':
@@ -2006,7 +2044,7 @@
         // PDF opacity control with lines
         const OPACITY_LINES_COUNT = 10;
         let opacityLineElements = [];
-        let currentOpacity = 100;
+        let currentOpacity = 20;
 
         function initOpacityLines() {
             opacityLines.innerHTML = '';
@@ -2043,15 +2081,20 @@
                 });
             });
 
-            // Click to set opacity
+            // Click to set opacity (controls spotlight darkness)
             opacityLines.addEventListener('click', (e) => {
                 const rect = opacityLines.getBoundingClientRect();
                 const percent = (e.clientX - rect.left) / rect.width;
                 currentOpacity = Math.round(percent * 100 / 10) * 10;
                 currentOpacity = Math.max(10, Math.min(100, currentOpacity));
                 updateOpacityLines();
-                pdfContainer.style.opacity = currentOpacity / 100;
+                updateSpotlightOpacity();
             });
+        }
+
+        function updateSpotlightOpacity() {
+            // Higher opacity = more visible PDF = less overlay
+            resetSpotlightToDefault();
         }
 
         function updateOpacityLines() {
@@ -2066,6 +2109,140 @@
 
         // Initialize opacity lines
         initOpacityLines();
+
+        // Spotlight effect on PDF
+        let spotlightEnabled = true;
+        const spotlightOverlay = document.createElement('div');
+        spotlightOverlay.id = 'spotlight-overlay';
+        spotlightOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+            transition: opacity 0.2s;
+        `;
+        pdfContainer.style.position = 'relative';
+        pdfContainer.appendChild(spotlightOverlay);
+
+        function getOverlayStrength() {
+            return 1 - (currentOpacity / 100);
+        }
+
+        function updateSpotlight(e) {
+            if (!isPdfMode || !spotlightEnabled) return;
+            const rect = pdfContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left + pdfContainer.scrollLeft;
+            const y = e.clientY - rect.top + pdfContainer.scrollTop;
+            const strength = getOverlayStrength();
+            spotlightOverlay.style.background = `radial-gradient(circle 180px at ${x}px ${y}px, transparent 0%, transparent 40%, rgba(255,255,255,${strength * 0.95}) 100%)`;
+        }
+
+        function resetSpotlightToDefault() {
+            const strength = getOverlayStrength();
+            spotlightOverlay.style.background = `rgba(255,255,255,${strength * 0.95})`;
+        }
+
+        pdfContainer.addEventListener('mousemove', updateSpotlight);
+        pdfContainer.addEventListener('mouseenter', () => {
+            if (isPdfMode) spotlightOverlay.style.opacity = '1';
+        });
+        pdfContainer.addEventListener('mouseleave', () => {
+            resetSpotlightToDefault();
+        });
+
+        // Initialize with default overlay
+        resetSpotlightToDefault();
+
+        // Font size control with lines
+        const SIZE_LINES_COUNT = 10;
+        const SIZE_MIN = 50;
+        const SIZE_MAX = 200;
+        let sizeLineElements = [];
+        let currentSize = 100;
+
+        function initSizeLines() {
+            sizeLines.innerHTML = '';
+            sizeLineElements = [];
+
+            for (let i = 0; i < SIZE_LINES_COUNT; i++) {
+                const line = document.createElement('div');
+                line.className = 'control-line';
+                line.dataset.index = i;
+                sizeLines.appendChild(line);
+                sizeLineElements.push(line);
+            }
+
+            updateSizeLines();
+
+            // Bell curve hover effect
+            sizeLines.addEventListener('mousemove', (e) => {
+                const rect = sizeLines.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+
+                sizeLineElements.forEach((line, i) => {
+                    const lineX = (i / SIZE_LINES_COUNT) * rect.width;
+                    const distance = Math.abs(mouseX - lineX);
+                    const maxDist = rect.width * 0.2;
+                    const intensity = Math.exp(-(distance * distance) / (2 * maxDist * maxDist));
+                    const height = 8 + (16 * intensity);
+                    line.style.height = height + 'px';
+                });
+            });
+
+            sizeLines.addEventListener('mouseleave', () => {
+                sizeLineElements.forEach(line => {
+                    line.style.height = '';
+                });
+            });
+
+            // Click to set size
+            sizeLines.addEventListener('click', (e) => {
+                const rect = sizeLines.getBoundingClientRect();
+                const percent = (e.clientX - rect.left) / rect.width;
+                currentSize = Math.round(SIZE_MIN + percent * (SIZE_MAX - SIZE_MIN));
+                currentSize = Math.max(SIZE_MIN, Math.min(SIZE_MAX, currentSize));
+                updateSizeLines();
+                applyFontSize();
+            });
+        }
+
+        function updateSizeLines() {
+            const percent = (currentSize - SIZE_MIN) / (SIZE_MAX - SIZE_MIN);
+            const activeIndex = Math.floor(percent * (SIZE_LINES_COUNT - 1));
+
+            sizeLineElements.forEach((line, i) => {
+                line.classList.toggle('active', i <= activeIndex);
+            });
+
+            sizeValue.textContent = currentSize + '%';
+        }
+
+        function applyFontSize() {
+            const scale = currentSize / 100;
+            // Scale font size
+            wordWrapper.style.fontSize = `calc(clamp(2.5rem, 8vw, 5rem) * ${scale})`;
+            // Scale reader window width (compact mode)
+            if (wordDisplay.classList.contains('compact')) {
+                wordWrapper.style.fontSize = `calc(4rem * ${scale})`;
+                const baseWidth = 500;
+                const newWidth = baseWidth * scale;
+                wordDisplay.style.width = `${newWidth}px`;
+                wordWrapper.style.minWidth = `${Math.max(300, 400 * scale)}px`;
+            }
+        }
+
+        function cycleSize(direction) {
+            currentSize = currentSize + (direction * 25);
+            currentSize = Math.max(SIZE_MIN, Math.min(SIZE_MAX, currentSize));
+            updateSizeLines();
+            applyFontSize();
+        }
+
+        // Initialize size lines
+        initSizeLines();
 
         // Setup PDF word click handlers
         function setupPdfWordClicks() {
